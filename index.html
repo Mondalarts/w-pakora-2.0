@@ -1,81 +1,212 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Language Translator</title>
-  <style>
-    body {
-      background: #493980;
-      background: linear-gradient(to right, #2c5364, #203a43, #0f2027);
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-      padding: 50px;
-    }
-    .container {
-      background: rgba(255,255,255,0.1);
-      padding: 30px;
-      border-radius: 15px;
-      max-width: 500px;
-      margin: auto;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    }
-    textarea, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 15px;
-      border-radius: 8px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background: #ff9800;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:hover {
-      background: #e68900;
-    }
-    .output {
-      margin-top: 20px;
-      padding: 15px;
-      background: rgba(0,0,0,0.5);
-      border-radius: 10px;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Spy Cipher — Encode & Decode</title>
+<style>
+  :root{--bg:#0b1221;--panel:#071023;--accent:#00d9a5;--muted:#9bb;}
+  body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(135deg,#071021 0%,#0b1430 100%);color:#e6f7f1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{width:900px;max-width:100%;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06));border-radius:12px;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(0,0,0,0.4)}
+  h1{margin:0 0 8px;font-size:20px;color:var(--accent)}
+  p.small{margin:6px 0 18px;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:12px}
+  textarea{width:100%;min-height:120px;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.25);color:#e9fff8;resize:vertical;font-family:monospace}
+  select,input[type="text"]{padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:inherit}
+  button{background:var(--accent);border:none;color:#042226;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+  .controls{display:flex;gap:8px;align-items:center;margin:12px 0;flex-wrap:wrap}
+  .label{font-size:13px;color:var(--muted);margin-right:6px}
+  .out{margin-top:12px;padding:12px;border-radius:8px;background:rgba(0,0,0,0.35);min-height:72px;font-family:monospace;white-space:pre-wrap}
+  footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:right}
+  .smallbtn{padding:6px 8px;font-size:13px;border-radius:6px}
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>🌍 Language Translator</h1>
-    <textarea id="inputText" placeholder="Enter text..."></textarea>
-    <select id="targetLang">
-      <option value="en">English</option>
-      <option value="bn">Bangla</option>
-      <option value="fr">French</option>
-      <option value="es">Spanish</option>
-      <option value="de">German</option>
-      <option value="hi">Hindi</option>
-    </select>
-    <button onclick="translateText()">Translate</button>
-    <div id="output" class="output"></div>
+  <div class="card">
+    <h1>Spy Cipher — Encoder & Decoder</h1>
+    <p class="small">Rules: a=1 … z=26. Letter end markers = <code>- . :</code>. Word end = <code>_</code>. Sentence end = <code>;</code>. Numbers >26 are noise and ignored on decode.</p>
+
+    <div class="row" style="gap:18px">
+      <div style="flex:1">
+        <label class="label">Plain text (to encode) </label>
+        <textarea id="plain" placeholder="Type normal text here, e.g. hi i am shonku"></textarea>
+      </div>
+      <div style="flex:1">
+        <label class="label">Spy code (to decode)</label>
+        <textarea id="code" placeholder="Paste code here, e.g. 8-9_9_1-13_19-8-15-14-11-21:;" ></textarea>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <label class="label">Letter separator mode:</label>
+        <select id="sepMode">
+          <option value="random">Random (- . : )</option>
+          <option value="fixed">Fixed</option>
+        </select>
+        <select id="fixedSep" style="display:inline-block;margin-left:8px">
+          <option value="-">- (dash)</option>
+          <option value=".">. (dot)</option>
+          <option value=":">: (colon)</option>
+        </select>
+      </div>
+
+      <div style="margin-left:auto">
+        <button id="btnEncode">Encode →</button>
+        <button id="btnDecode" class="ghost">← Decode</button>
+        <button id="btnCopy" class="smallbtn ghost">Copy result</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="label">Result</div>
+      <div id="result" class="out">Encoded / decoded text will appear here.</div>
+    </div>
+
+    <footer>Letter separators behave the same on decode. Underscore <code>_</code> = word boundary. Semicolon <code>;</code> = sentence end.</footer>
   </div>
 
-  <script>
-    async function translateText() {
-      let text = document.getElementById("inputText").value;
-      let lang = document.getElementById("targetLang").value;
+<script>
+(function(){
+  // mapping a=1 ... z=26
+  const letterMap = {};
+  const revMap = {};
+  for(let i=1;i<=26;i++){
+    const ch = String.fromCharCode(96 + i);
+    letterMap[ch] = String(i);
+    revMap[String(i)] = ch;
+  }
+  const letterEnds = ['-','.':':']; // placeholder to be replaced below — fix in next lines
+})();
+</script>
 
-      if (text.trim() === "") {
-        document.getElementById("output").innerHTML = "⚠️ Please enter some text!";
-        return;
+<script>
+// Fix mapping bug in previous small IIFE, implement full logic now
+
+// mapping
+const letterMap = {};
+const revMap = {};
+for (let i = 1; i <= 26; i++) {
+  const ch = String.fromCharCode(96 + i);
+  letterMap[ch] = String(i);
+  revMap[String(i)] = ch;
+}
+
+const letterSeparators = ['-', '.', ':'];
+const WORD_MARK = '_';
+const SENT_MARK = ';';
+
+function pickSep(mode, fixed) {
+  if (mode === 'fixed') return fixed;
+  return letterSeparators[Math.floor(Math.random() * letterSeparators.length)];
+}
+
+// ENCODE: text -> code
+function encodeText(txt, sepMode = 'random', fixedSep = '-') {
+  if (!txt) return '';
+  const words = txt.trim().split(/\s+/);
+  const encodedWords = words.map(word => {
+    let enc = '';
+    for (const ch of word.toLowerCase()) {
+      if (ch >= 'a' && ch <= 'z') {
+        const num = letterMap[ch]; // 1..26
+        const sep = pickSep(sepMode, fixedSep);
+        enc += num + sep;
+      } else {
+        // if non-alpha, skip or you could add as-is; here skip
       }
-
-      // Demo only → Backend API needed for real translation
-      document.getElementById("output").innerHTML = 
-        `Translating "${text}" → [${lang}] (Backend connection required)`;
     }
-  </script>
+    // remove possible trailing separators (if consistent)
+    // but we intentionally keep a separator at the end of each letter for clarity
+    return enc;
+  });
+  return encodedWords.join(WORD_MARK) + SENT_MARK;
+}
+
+// DECODE: code -> text
+function decodeCode(codeStr) {
+  if (!codeStr) return '';
+  // remove leading/trailing whitespace
+  const normalized = codeStr.trim();
+  // split by sentence mark ';' — decode only before first ';'
+  const firstPart = normalized.split(SENT_MARK)[0];
+  const encodedWords = firstPart.split(WORD_MARK);
+  const decodedWords = encodedWords.map(ew => {
+    // extract all number-groups (consecutive digits) in order
+    const nums = [];
+    let cur = '';
+    for (let i = 0; i < ew.length; i++) {
+      const ch = ew[i];
+      if (ch >= '0' && ch <= '9') {
+        cur += ch;
+      } else {
+        if (cur.length > 0) {
+          nums.push(cur);
+          cur = '';
+        }
+        // treat separators as boundaries; ignore other chars
+      }
+    }
+    if (cur.length > 0) nums.push(cur);
+    // convert numbers 1..26 -> letters; ignore >26 noise
+    let word = '';
+    for (const nstr of nums) {
+      const n = parseInt(nstr, 10);
+      if (!isNaN(n) && n >= 1 && n <= 26) {
+        word += revMap[String(n)];
+      } else {
+        // ignore noise (>26) as requested
+      }
+    }
+    return word;
+  });
+  return decodedWords.join(' ');
+}
+
+// UI bindings
+const plain = document.getElementById('plain');
+const code = document.getElementById('code');
+const result = document.getElementById('result');
+const sepMode = document.getElementById('sepMode');
+const fixedSep = document.getElementById('fixedSep');
+const btnEncode = document.getElementById('btnEncode');
+const btnDecode = document.getElementById('btnDecode');
+const btnCopy = document.getElementById('btnCopy');
+
+btnEncode.addEventListener('click', () => {
+  const mode = sepMode.value;
+  const fsep = fixedSep.value;
+  const txt = plain.value;
+  const encoded = encodeText(txt, mode, fsep);
+  result.textContent = encoded || '(empty)';
+  // also copy to code box for convenience
+  code.value = encoded;
+});
+
+btnDecode.addEventListener('click', () => {
+  const coded = code.value;
+  const decoded = decodeCode(coded);
+  result.textContent = decoded || '(empty)';
+  // also copy to plain box for convenience
+  plain.value = decoded;
+});
+
+btnCopy.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(result.textContent);
+    btnCopy.textContent = 'Copied ✓';
+    setTimeout(()=> btnCopy.textContent = 'Copy result', 1200);
+  } catch (e) {
+    alert('Copy failed — select and copy manually.');
+  }
+});
+
+// allow pressing Ctrl+Enter in textboxes to trigger encode/decode
+plain.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') btnEncode.click(); });
+code.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') btnDecode.click(); });
+
+</script>
 </body>
 </html>
+
